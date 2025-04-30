@@ -1,54 +1,46 @@
-import { useState } from "react"
-import axios from "axios"
+import React from "react";
 
-const ChatWindow = ({ user, otherUser }) => {
-  const [messages, setMessages] = useState([])
-  const [input, setInput] = useState("")
+const ChatWindow = ({ currentUser, selectedUserId }) => {
+  const users = [
+    { id: 1, username: "User1" },
+    { id: 2, username: "User2" },
+    { id: 3, username: "User3" },
+    { id: 4, username: "User4" },
+  ];
 
-  const fetchMessages = async () => {
-    const res = await axios.get(`/messages/${user}/${otherUser}`)
-    setMessages(res.data)
-  }
-
-  const sendMessage = async () => {
-    if (!input.trim()) return
-
-    await axios.post("/messages/", {
-      from_user: user,
-      to_user: otherUser,
-      text: input,
-    })
-
-    setInput("")
-    fetchMessages() // Fetch updated messages after sending
-  }
+  const selectedUser = users.find((user) => user.id === selectedUserId);
+  const chatMessages = [
+    { sender: 1, message: "Hello, how are you?" },
+    { sender: 2, message: "I'm good! How about you?" },
+  ];
 
   return (
-    <div className="chat-window">
-      <div className="chat-header">
-        Chatting with {otherUser}
+    <div className="h-full flex flex-col">
+      <div className="flex items-center justify-between p-4 bg-gray-100">
+        <h2 className="text-xl">{selectedUser ? selectedUser.username : "Select a user"}</h2>
       </div>
-      <div className="chat-messages">
-        {messages.map((message) => (
-          <div key={message.id}>
-            <strong>{message.from_user}:</strong> {message.text}
+      <div className="flex-1 p-4 overflow-y-auto bg-gray-50">
+        {chatMessages.map((msg, index) => (
+          <div
+            key={index}
+            className={`mb-2 ${msg.sender === 1 ? "text-right" : "text-left"}`}
+          >
+            <span className={`font-bold ${msg.sender === 1 ? "text-blue-500" : "text-green-500"}`}>
+              {msg.sender === 1 ? currentUser : selectedUser?.username}:
+            </span>
+            <span>{msg.message}</span>
           </div>
         ))}
       </div>
-      <div className="chat-input-container">
+      <div className="p-4 border-t">
         <input
-          className="chat-input"
           type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Type a message"
+          className="w-full p-2 border rounded"
+          placeholder="Type a message..."
         />
-        <button className="send-btn" onClick={sendMessage}>
-          Send
-        </button>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default ChatWindow
+export default ChatWindow;
