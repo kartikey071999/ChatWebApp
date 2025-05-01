@@ -33,6 +33,15 @@ export const getMessages = async (senderId, receiverId) => {
   }
 };
 
+export const getMessagesBetweenUsers = async (userId, toId) => {
+    try {const res = await fetch(`/messages/all/${userId}/${toId}`);
+    return res.data;
+    } catch (error) {
+    console.error("Error fetching messages:", error);
+    throw error;
+    }
+  };
+
 // API function to create a user
 export const createUser = async (username, email, password) => {
   try {
@@ -65,4 +74,17 @@ export const loginUser = async (username, password) => {
       throw error;
     }
   };
+
+
+// api.js
+export const getAllUsers = async (userId) => {
+    try {
+        const response = await api.get(`/users/all/${userId}`);
+        return response.data;
+      } catch (error) {
+        console.error("Error fetcting all in:", error);
+        throw error;
+      }
+  };
+  
   

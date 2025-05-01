@@ -1,8 +1,10 @@
+// src/App.jsx
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
-import ChatPage from "./pages/ChatPage";
+import ChatPage from "./pages/ChatPage/ChatPage";
 import AccountPage from "./pages/AccountPage";
+import './App.css'; // Import App-level styles
 
 const App = () => {
   return (

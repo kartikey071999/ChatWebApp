@@ -1,0 +1,16 @@
+/* ChatPage */
+.chat-page {
+  display: flex;
+  height: 100vh;
+}
+
+.chat-sidebar {
+  width: 25%;
+  background-color: white;
+  border-right: 1px solid #adc0da;
+}
+
+.chat-window {
+  flex-grow: 1;
+  background-color: white;
+}

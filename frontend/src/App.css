@@ -1,0 +1,9 @@
+/* src/App.css */
+
+/* Styling for general app layout */
+.App {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+  

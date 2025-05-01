@@ -1,20 +1,30 @@
-import { useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
 const AccountPage = () => {
-  const navigate = useNavigate();
+  const { state } = useLocation();
+
+  const { id, username, email } = state || {};
+
+  if (!id || !username || !email) {
+    return (
+      <div className="p-6 text-red-600 text-lg">
+        Invalid user data. Please go back and log in again.
+      </div>
+    );
+  }
 
   return (
-    <div className="flex justify-center items-center h-screen">
-      <div className="w-full max-w-sm p-6 border rounded shadow-lg">
-        <h2 className="text-2xl font-bold text-center mb-6">Account Settings</h2>
-        <div className="text-center">
-          <p>This page is blank for now.</p>
-          <button
-            onClick={() => navigate("/chat")}
-            className="w-full bg-blue-600 text-white p-2 mt-4 rounded"
-          >
-            Back to Chat
-          </button>
+    <div className="max-w-md mx-auto p-6 mt-10 border rounded-lg shadow-lg bg-white">
+      <h2 className="text-2xl font-bold mb-4 text-center text-blue-600">Account Details</h2>
+      <div className="space-y-4 text-gray-800">
+        <div>
+          <strong>User ID:</strong> {id}
+        </div>
+        <div>
+          <strong>Username:</strong> {username}
+        </div>
+        <div>
+          <strong>Email:</strong> {email}
         </div>
       </div>
     </div>

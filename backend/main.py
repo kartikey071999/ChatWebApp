@@ -16,6 +16,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
 
+from typing import List
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+
 # Load environment variables from .env file
 load_dotenv()
 # Database setup
@@ -81,10 +85,10 @@ def create_user(user: UserCreate):
     db.close()
     return db_user
 
-@app.get("/users/{user_id}")
-def get_user(user_id: int):
+@app.get("/users/{id}")
+def get_user(id: int):
     db = SessionLocal()
-    db_user = db.query(User).filter(User.id == user_id).first()
+    db_user = db.query(User).filter(User.id == id).first()
     db.close()
     return db_user
 
@@ -108,9 +112,21 @@ def get_messages(sender_id: int, receiver_id: int):
     db = SessionLocal()
     # Retrieve messages between sender and receiver
     messages = db.query(Message).filter(
-        (Message.sender_id == sender_id) & (Message.receiver_id == receiver_id) |
-        (Message.sender_id == receiver_id) & (Message.receiver_id == sender_id)
+        (Message.sender_id == sender_id) & (Message.receiver_id == receiver_id) 
     ).all()
+    db.close()
+    return messages
+
+
+@app.get("/messages/all/{user_id}/{toId}")
+def get_messages(user_id: int, to_id: int):
+    db = SessionLocal()
+    # Retrieve messages between sender and receiver
+    messages = db.query(Message).filter(
+        (Message.sender_id == user_id) & (Message.receiver_id == to_id) |
+        (Message.sender_id == to_id) & (Message.receiver_id == user_id)
+    ).order_by(Message.id).all()
+
     db.close()
     return messages
 
@@ -134,3 +150,10 @@ def login(request: LoginRequest):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     db.close()
     return user
+
+@app.get("/users/all/{id}", response_model=List[UserCreate])
+def get_all_users(id : int):
+    db = SessionLocal()
+    users = db.query(User).all()
+    db.close()
+    return users

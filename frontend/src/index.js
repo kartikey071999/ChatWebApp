@@ -1,11 +1,11 @@
-import React from "react";
-import ReactDOM from "react-dom/client"; // For React 18+
-import App from "./App"; // Your main App component
-import "./index.css"; // Global styles (if you have any)
+// src/index.js
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import './index.css'; // Global styles
+import App from './App.jsx';
 
-const root = ReactDOM.createRoot(document.getElementById("root"));
-root.render(
-  <React.StrictMode>
+createRoot(document.getElementById('root')).render(
+  <StrictMode>
     <App />
-  </React.StrictMode>
+  </StrictMode>
 );
