@@ -1,14 +1,12 @@
 import enum
 
 
-class GenderEnum(str, enum.Enum):
-    MALE = "male"
-    FEMALE = "female"
-    OTHER = "other"
-    NOT_SPECIFIED = "not_specified"
+class RoleEnum(str, enum.Enum):
+    ADMIN = "admin"
+    USER = "user"
 
 
 class MessageStatus(str, enum.Enum):
-    NOT_RECEIVED = "not_received"
-    RECEIVED = "received"
+    SENT = "sent"
+    DELIVERED = "delivered"
     READ = "read"

@@ -1,102 +1,132 @@
-"""WebSocket handlers for real-time chat."""
-from typing import Dict, Set
+"""WebSocket handler for real-time channel messaging and online tracking."""
+
 import json
 import logging
+from typing import Dict, Set
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session
 
 from ...database import SessionLocal
-from ...models import Message
+from ...models import Message, ChannelMember
 
 logger = logging.getLogger(__name__)
-
 router = APIRouter()
 
 
-class ConnectionManager:
-    """Track active WebSocket connections per user."""
+class ChannelConnectionManager:
+    """Manage WebSocket connections per channel.
+    
+    Tracks online users per channel: channel_id -> set(WebSocket)
+    """
 
     def __init__(self):
-        self.active: Dict[str, Set[WebSocket]] = {}
+        # channel_id -> {(user_id, WebSocket), ...}
+        self.active_channels: Dict[str, Set[tuple]] = {}
 
-    async def connect(self, user_id: str, websocket: WebSocket):
+    async def connect(self, channel_id: str, user_id: str, websocket: WebSocket):
+        """Register a user connection to a channel."""
         await websocket.accept()
-        conns = self.active.setdefault(user_id, set())
-        conns.add(websocket)
-        logger.info("User %s connected", user_id)
+        if channel_id not in self.active_channels:
+            self.active_channels[channel_id] = set()
+        self.active_channels[channel_id].add((user_id, websocket))
+        logger.info(f"User {user_id} connected to channel {channel_id}")
 
-    def disconnect(self, user_id: str, websocket: WebSocket):
-        conns = self.active.get(user_id)
-        if not conns:
+    def disconnect(self, channel_id: str, user_id: str, websocket: WebSocket):
+        """Unregister a user connection."""
+        if channel_id in self.active_channels:
+            self.active_channels[channel_id].discard((user_id, websocket))
+            if not self.active_channels[channel_id]:
+                del self.active_channels[channel_id]
+        logger.info(f"User {user_id} disconnected from channel {channel_id}")
+
+    async def broadcast_to_channel(self, channel_id: str, message: dict):
+        """Broadcast message to all users in a channel."""
+        if channel_id not in self.active_channels:
             return
-        conns.discard(websocket)
-        if not conns:
-            self.active.pop(user_id, None)
-        logger.info("User %s disconnected", user_id)
-
-    async def send_personal(self, websocket: WebSocket, message: dict):
-        await websocket.send_text(json.dumps(message))
-
-    async def send_to_user(self, user_id: str, message: dict) -> bool:
-        conns = self.active.get(user_id)
-        if not conns:
-            return False
         payload = json.dumps(message)
-        for ws in set(conns):
+        for user_id, ws in list(self.active_channels[channel_id]):
             try:
                 await ws.send_text(payload)
-            except Exception:
-                logger.exception("Failed to send to user %s", user_id)
-        return True
+            except Exception as e:
+                logger.exception(f"Failed to send to user {user_id}: {e}")
+
+    def get_online_users(self, channel_id: str) -> set:
+        """Get set of online user IDs in a channel."""
+        if channel_id not in self.active_channels:
+            return set()
+        return {user_id for user_id, ws in self.active_channels[channel_id]}
 
 
-manager = ConnectionManager()
+manager = ChannelConnectionManager()
 
 
-def persist_message(sender_id: str, receiver_id: str, content: str) -> dict:
+@router.websocket("/channels/{channel_id}/{user_id}")
+async def websocket_endpoint(websocket: WebSocket, channel_id: str, user_id: str):
+    """WebSocket endpoint for real-time channel messaging."""
     db: Session = SessionLocal()
     try:
-        db_message = Message(sender_id=str(sender_id), receiver_id=str(receiver_id), content=content)
-        db.add(db_message)
-        db.commit()
-        db.refresh(db_message)
-        return {
-            "id": db_message.id,
-            "sender_id": db_message.sender_id,
-            "receiver_id": db_message.receiver_id,
-            "content": db_message.content,
-            "status": db_message.status,
-            "is_deleted": db_message.is_deleted,
-            "sent_time": db_message.sent_time.isoformat(),
-        }
-    finally:
-        db.close()
+        # Verify user is member of channel
+        member = db.query(ChannelMember).filter(
+            ChannelMember.user_id == user_id,
+            ChannelMember.channel_id == channel_id
+        ).first()
+        if not member:
+            await websocket.close(code=403, reason="Not a member of this channel")
+            return
 
+        await manager.connect(channel_id, user_id, websocket)
 
-@router.websocket("/ws/{user_id}")
-async def websocket_endpoint(websocket: WebSocket, user_id: str):
-    await manager.connect(user_id, websocket)
-    try:
+        # Send online users list
+        online_users = manager.get_online_users(channel_id)
+        await manager.broadcast_to_channel(channel_id, {
+            "type": "user_joined",
+            "user_id": user_id,
+            "online_users": list(online_users),
+        })
+
         while True:
             data = await websocket.receive_text()
             try:
-                payload = json.loads(data)
-            except json.JSONDecodeError:
-                await websocket.send_text(json.dumps({"error": "invalid_json"}))
-                continue
+                # Try to parse as JSON; if fails, treat as raw message content
+                try:
+                    payload = json.loads(data)
+                    content = payload.get("content", "").strip()
+                except json.JSONDecodeError:
+                    # Treat raw text as message content
+                    content = data.strip()
+                
+                if not content:
+                    await websocket.send_text(json.dumps({"error": "Empty message"}))
+                    continue
 
-            receiver_id = payload.get("receiver_id")
-            content = payload.get("content")
-            if not receiver_id or not content:
-                await websocket.send_text(json.dumps({"error": "missing_fields"}))
-                continue
+                # Persist message
+                msg = Message(channel_id=channel_id, sender_id=user_id, content=content)
+                db.add(msg)
+                db.commit()
+                db.refresh(msg)
 
-            msg = persist_message(sender_id=user_id, receiver_id=receiver_id, content=content)
-            delivered = await manager.send_to_user(receiver_id, {"type": "message", "message": msg})
-            await manager.send_personal(websocket, {"type": "ack", "delivered": delivered, "message": msg})
+                # Broadcast to all users in channel
+                await manager.broadcast_to_channel(channel_id, {
+                    "type": "message",
+                    "id": msg.id,
+                    "sender_id": user_id,
+                    "content": content,
+                    "created_at": msg.created_at.isoformat(),
+                })
+
+            except Exception as e:
+                logger.exception(f"Error processing message: {e}")
 
     except WebSocketDisconnect:
-        manager.disconnect(user_id, websocket)
-    except Exception:
-        logger.exception("WebSocket error for user %s", user_id)
-        manager.disconnect(user_id, websocket)
+        manager.disconnect(channel_id, user_id, websocket)
+        online_users = manager.get_online_users(channel_id)
+        await manager.broadcast_to_channel(channel_id, {
+            "type": "user_left",
+            "user_id": user_id,
+            "online_users": list(online_users),
+        })
+    except Exception as e:
+        logger.exception(f"WebSocket error: {e}")
+        manager.disconnect(channel_id, user_id, websocket)
+    finally:
+        db.close()
