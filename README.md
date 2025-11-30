@@ -153,7 +153,7 @@ python backend/main.py --host 127.0.0.1 --port 8000
 4) Frontend (in `frontend/`):
 
 ```powershell
-Set-Location 'C:\Users\karti\OneDrive\Documents\GitHub\ChatWebApp\frontend'
+Set-Location '<your dir>\ChatWebApp\frontend'
 npm install
 npm run dev
 # open the URL shown by Vite (typically http://localhost:5173)
@@ -182,7 +182,7 @@ Notes:
 - A simple integration test exists at `backend/test_integration.py`. To run it (after starting the backend):
 
 ```powershell
-Set-Location 'C:\Users\karti\OneDrive\Documents\GitHub\ChatWebApp\backend'
+Set-Location '<your dir>\ChatWebApp\backend'
 . .\.venv\Scripts\Activate.ps1
 python test_integration.py
 ```
