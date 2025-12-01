@@ -184,6 +184,9 @@ ChatWebApp/
    # For PostgreSQL (production):
    # DATABASE_URL=postgresql://username:password@localhost/chatapp
    
+   # Security & Encryption
+   ENCRYPTION_KEY=change-this-to-secure-random-key-in-production
+   
    # Server Configuration (optional - these are defaults)
    HOST=127.0.0.1
    PORT=8000
@@ -193,10 +196,16 @@ ChatWebApp/
    
    **Environment Variables Explained:**
    - `DATABASE_URL`: Database connection string (SQLite for dev, PostgreSQL for production)
+   - `ENCRYPTION_KEY`: Key used for password encryption (MUST change in production)
    - `HOST`: Server bind address (default: 127.0.0.1)
    - `PORT`: Server port (default: 8000)
    - `RELOAD`: Enable auto-reload on code changes (default: true)
    - `LOG_LEVEL`: Logging level - `debug`, `info`, `warning`, `error` (default: info)
+   
+   **Generate secure encryption key:**
+   ```bash
+   python -c "import secrets; print(secrets.token_urlsafe(32))"
+   ```
 
 4. **Initialize database:**
    ```bash
@@ -419,6 +428,9 @@ Create this file in the `backend/` directory:
 # Database Configuration
 DATABASE_URL=sqlite:///./test.db
 
+# Security & Encryption
+ENCRYPTION_KEY=change-this-to-secure-random-key-in-production
+
 # Server Configuration (optional)
 HOST=127.0.0.1
 PORT=8000
@@ -430,10 +442,18 @@ LOG_LEVEL=info
 - `DATABASE_URL` (required): Database connection string
   - SQLite: `sqlite:///./test.db`
   - PostgreSQL: `postgresql://user:password@localhost/dbname`
+- `ENCRYPTION_KEY` (required): Encryption key for password storage
+  - Development: Any string (e.g., `dev-key-12345`)
+  - **Production**: Use a secure random key (see below)
 - `HOST` (optional): Server bind address (default: 127.0.0.1)
 - `PORT` (optional): Server port (default: 8000)
 - `RELOAD` (optional): Auto-reload on code changes (default: true)
 - `LOG_LEVEL` (optional): Logging verbosity (default: info)
+
+**Generate a secure encryption key for production:**
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+```
 
 #### Frontend Environment (`frontend/.env`)
 
