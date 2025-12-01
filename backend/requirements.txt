@@ -1,7 +1,20 @@
-fastapi
-uvicorn[standard]
-sqlalchemy
-psycopg2-binary       # PostgreSQL driver
-python-dotenv
-pydantic
-httpx
+# Web Framework & Server
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+python-dotenv>=1.0.0
+
+# Database
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.9      # PostgreSQL driver (optional for production)
+
+# Data Validation
+pydantic>=2.0.0
+
+# Security & Encryption
+cryptography>=41.0.0        # Used for password encryption (crypto.py)
+
+# Testing & Development
+httpx>=0.25.0               # Used in test files for API testing
+
+# WebSocket Support
+# (included with fastapi/uvicorn[standard])
