@@ -14,7 +14,8 @@ router = APIRouter()
 
 
 class ChannelConnectionManager:
-    """Manage WebSocket connections per channel.
+    """
+    Manage WebSocket connections per channel.
     
     Tracks online users per channel: channel_id -> set(WebSocket)
     """
