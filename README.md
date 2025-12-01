@@ -100,6 +100,8 @@ Next steps (suggested)
 - Scaffold the frontend UI components and a minimal light theme
 
 If you want, I can scaffold the frontend now and wire a WebSocket client to the backend.
+> **🚀 [Live Demo - Click Here to Try It Out!](https://chatwebapp-application.onrender.com)** 🚀
+
 # ChatWebApp
 
 A modern, real-time chat application with a FastAPI backend and React frontend. Built with WebSocket support for instant messaging, channel-based communication, and user presence tracking.
